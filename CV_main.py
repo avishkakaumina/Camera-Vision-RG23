@@ -9,15 +9,26 @@ def detect_color(frame):
     #print(hsv)
     
     # Define the lower and upper boundaries of the color you want to detect (in HSV)
-    lower_bound = np.array([100, 100, 100])  # Lower bound of the color (here, it's for green color)
-    upper_bound = np.array([140, 255, 255])  # Upper bound of the color (here, it's for green color)
+    lower_bound_b = np.array([100, 100, 100])  # Lower bound of the color (here, it's for Blue color)
+    upper_bound_b = np.array([140, 255, 255])  # Upper bound of the color (here, it's for Blue color)
+
+    lower_bound_g = np.array([35, 100, 100])  # Lower bound of the color (here, it's for green color)
+    upper_bound_g = np.array([85, 255, 255])  # Upper bound of the color (here, it's for green color)
+
     
-    # Create a mask for the specified color range
-    global mask
-    mask = cv2.inRange(hsv, lower_bound, upper_bound)
+    # Create a mask for the blue color range
+    global mask1
+    mask1 = cv2.inRange(hsv, lower_bound_b, upper_bound_b)
+    # Create a mask for the green color range
+    global mask2
+    mask2 = cv2.inRange(hsv, lower_bound_g, upper_bound_g)
+
+    # Combine the green object and background
+    global result
+    result = cv2.add(mask1, mask2)
     
     # Bitwise-AND mask and original image
-    res = cv2.bitwise_and(frame, frame, mask=mask)
+    res = cv2.bitwise_and(frame, frame, mask=result)
     
     return res
 
@@ -32,13 +43,13 @@ while True:
     detected_color = detect_color(frame)
 
     # Apply Canny edge detection (example)
-    edges = cv2.Canny(mask, 50, 150)
+    edges = cv2.Canny(detected_color, 50, 150)
 
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     for contour in contours:
         # Approximate the contour to a polygon
-        epsilon = 0.4 * cv2.arcLength(contour, True)
+        epsilon = 0.04 * cv2.arcLength(contour, True)
         approx = cv2.approxPolyDP(contour, epsilon, True)
 
         # Get the number of vertices (shape detection logic)
@@ -59,7 +70,7 @@ while True:
     
 
 
-    mask_box_b = Image.fromarray(mask)
+    mask_box_b = Image.fromarray(result)
     bbox_b = mask_box_b.getbbox()
     if bbox_b is not None:
         x1, y1, x2, y2 = bbox_b
